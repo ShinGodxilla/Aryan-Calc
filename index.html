@@ -1,0 +1,610 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<link rel="manifest" href="manifest.json">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aryan's Calculator</title>
+
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b1020;
+    --panel: #141b2e;
+    --screen: #0d1426;
+    --key: #202a40;
+    --key-hover: #2d3953;
+    --text: #f4f7ff;
+    --muted: #94a3bd;
+    --border: #29344b;
+    --accent: #8b9cff;
+    --accent-text: #10152b;
+    --shadow: #0005;
+  }
+
+  body.light {
+    color-scheme: light;
+    --bg: #eef2f9;
+    --panel: #ffffff;
+    --screen: #f5f7fc;
+    --key: #edf1f8;
+    --key-hover: #dfe6f3;
+    --text: #172036;
+    --muted: #6c7891;
+    --border: #dce3ef;
+    --accent: #5267e8;
+    --accent-text: #ffffff;
+    --shadow: #27385814;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(ellipse at top, #6479cf20, transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+    transition: background .25s, color .25s;
+  }
+
+  button { font: inherit; }
+
+  .app {
+    width: 100%;
+    max-width: 410px;
+    padding: 24px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    box-shadow: 0 24px 70px var(--shadow);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+
+  .logo {
+    display: grid;
+    place-items: center;
+    width: 43px;
+    height: 43px;
+    border-radius: 14px;
+    background: var(--accent);
+    color: var(--accent-text);
+    font-size: 25px;
+    font-weight: 800;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 19px;
+    letter-spacing: -.5px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    margin-top: 4px;
+    font-size: 12px;
+  }
+
+  .theme {
+    width: 43px;
+    height: 43px;
+    border: 1px solid var(--border);
+    background: var(--key);
+    color: var(--text);
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 19px;
+  }
+
+  .display {
+    padding: 20px 17px;
+    min-height: 128px;
+    border-radius: 19px;
+    background: var(--screen);
+    border: 1px solid var(--border);
+    margin-bottom: 17px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    text-align: right;
+    overflow: hidden;
+  }
+
+  #expression {
+    color: var(--muted);
+    font-size: 14px;
+    min-height: 22px;
+    overflow-wrap: anywhere;
+  }
+
+  #result {
+    font-size: clamp(30px, 8vw, 42px);
+    font-weight: 650;
+    letter-spacing: -1.5px;
+    margin-top: 7px;
+    overflow-wrap: anywhere;
+  }
+
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .key {
+    min-width: 0;
+    height: 61px;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    background: var(--key);
+    color: var(--text);
+    font-size: 19px;
+    font-weight: 550;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+
+  .key:hover { background: var(--key-hover); }
+  .key:active { transform: scale(.96); }
+
+  .utility {
+    color: var(--accent);
+    font-size: 15px;
+  }
+
+  .operator {
+    background: #6878df20;
+    color: var(--accent);
+    font-size: 23px;
+  }
+
+  .equals {
+    background: var(--accent);
+    color: var(--accent-text);
+    font-size: 25px;
+  }
+
+  .equals:hover { filter: brightness(1.08); }
+
+  .bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 22px;
+    gap: 12px;
+  }
+
+  .hint {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .history-toggle {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    border-radius: 11px;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .history {
+    display: none;
+    margin-top: 18px;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+
+  .history.open { display: block; }
+
+  .history-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .history-heading button {
+    background: none;
+    border: 0;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  #historyList {
+    display: grid;
+    gap: 7px;
+    max-height: 155px;
+    overflow-y: auto;
+  }
+
+  .history-item {
+    border: 0;
+    border-radius: 10px;
+    padding: 10px;
+    text-align: right;
+    background: var(--screen);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .history-item small {
+    display: block;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .empty {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    padding: 10px;
+  }
+
+  @media (max-width: 380px) {
+    .app { padding: 17px; }
+    .keypad { gap: 7px; }
+    .key { height: 54px; border-radius: 13px; }
+  }
+</style>
+</head>
+
+<body>
+<main class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">A</div>
+      <div>
+        <h1>Aryan's Calculator</h1>
+        <div class="subtitle">In Aryan, We Trust.</div>
+      </div>
+    </div>
+    <button class="theme" id="themeBtn"
+      aria-label="Switch color theme" title="Switch theme">☀</button>
+  </header>
+
+  <section class="display" aria-label="Calculator display">
+    <div id="expression" aria-live="polite"></div>
+    <div id="result" aria-live="polite">0</div>
+  </section>
+
+  <section class="keypad" aria-label="Calculator buttons">
+    <button class="key utility" data-action="clear">AC</button>
+    <button class="key utility" data-action="delete">DEL</button>
+    <button class="key utility" data-action="percent">%</button>
+    <button class="key operator" data-op="/">÷</button>
+
+    <button class="key" data-digit="7">7</button>
+    <button class="key" data-digit="8">8</button>
+    <button class="key" data-digit="9">9</button>
+    <button class="key operator" data-op="*">×</button>
+
+    <button class="key" data-digit="4">4</button>
+    <button class="key" data-digit="5">5</button>
+    <button class="key" data-digit="6">6</button>
+    <button class="key operator" data-op="-">−</button>
+
+    <button class="key" data-digit="1">1</button>
+    <button class="key" data-digit="2">2</button>
+    <button class="key" data-digit="3">3</button>
+    <button class="key operator" data-op="+">+</button>
+
+    <button class="key utility" data-action="sign">±</button>
+    <button class="key" data-action="zero">0</button>
+    <button class="key" data-action="decimal">.</button>
+    <button class="key equals" data-action="equals">=</button>
+  </section>
+
+  <footer class="bottom">
+    <div class="hint">Keyboard ready<br>Enter = · Esc = clear</div>
+    <button class="history-toggle" id="historyToggle">◷ History</button>
+  </footer>
+
+  <section class="history" id="history">
+    <div class="history-heading">
+      <strong>Recent calculations</strong>
+      <button id="clearHistory">Clear history</button>
+    </div>
+    <div id="historyList">
+      <div class="empty">Your calculations will appear here.</div>
+    </div>
+  </section>
+</main>
+
+<script>
+  const resultEl = document.getElementById("result");
+  const expressionEl = document.getElementById("expression");
+  const historyPanel = document.getElementById("history");
+  const historyList = document.getElementById("historyList");
+
+  let current = "0";
+  let stored = null;
+  let operator = null;
+  let waiting = false;
+  let justCalculated = false;
+  let error = false;
+  const calculations = [];
+
+  const symbols = { "+": "+", "-": "−", "*": "×", "/": "÷" };
+
+  function pretty(value) {
+    if (!Number.isFinite(value)) return "Error";
+    if (Object.is(value, -0)) value = 0;
+    return String(Number(value.toPrecision(10)));
+  }
+
+  function update() {
+    resultEl.textContent = current;
+    if (stored !== null && operator) {
+      expressionEl.textContent = pretty(stored) + " " + symbols[operator];
+    } else {
+      expressionEl.textContent = "";
+    }
+  }
+
+  function inputDigit(digit) {
+    if (error || waiting || justCalculated) {
+      current = digit;
+      waiting = false;
+      justCalculated = false;
+      error = false;
+    } else if (current === "0") {
+      current = digit;
+    } else if (current.replace("-", "").replace(".", "").length < 14) {
+      current += digit;
+    }
+    update();
+  }
+
+  function decimal() {
+    if (error || waiting || justCalculated) {
+      current = "0.";
+      waiting = false;
+      justCalculated = false;
+      error = false;
+    } else if (!current.includes(".")) {
+      current += ".";
+    }
+    update();
+  }
+
+  function calculatePair(a, b, op) {
+    if (op === "+") return a + b;
+    if (op === "-") return a - b;
+    if (op === "*") return a * b;
+    if (op === "/") return b === 0 ? null : a / b;
+    return b;
+  }
+
+  function chooseOperator(next) {
+    if (error) return;
+
+    if (operator && !waiting) {
+      const answer = calculatePair(stored, Number(current), operator);
+      if (answer === null || !Number.isFinite(answer)) {
+        showError();
+        return;
+      }
+      current = pretty(answer);
+    }
+
+    stored = Number(current);
+    operator = next;
+    waiting = true;
+    justCalculated = false;
+    update();
+  }
+
+  function equals() {
+    if (error || operator === null || stored === null || waiting) return;
+
+    const a = stored;
+    const b = Number(current);
+    const op = operator;
+    const answer = calculatePair(a, b, op);
+    const expression = pretty(a) + " " + symbols[op] + " " + pretty(b);
+
+    if (answer === null || !Number.isFinite(answer)) {
+      showError();
+      return;
+    }
+
+    current = pretty(answer);
+    calculations.unshift({ expression, answer: current });
+    if (calculations.length > 10) calculations.pop();
+    renderHistory();
+
+    stored = null;
+    operator = null;
+    waiting = false;
+    justCalculated = true;
+    expressionEl.textContent = expression + " =";
+    resultEl.textContent = current;
+  }
+
+  function showError() {
+    current = "Error";
+    stored = null;
+    operator = null;
+    waiting = true;
+    justCalculated = true;
+    error = true;
+    update();
+  }
+
+  function clearAll() {
+    current = "0";
+    stored = null;
+    operator = null;
+    waiting = false;
+    justCalculated = false;
+    error = false;
+    update();
+  }
+
+  function deleteLast() {
+    if (error || waiting || justCalculated) {
+      current = "0";
+      error = false;
+      waiting = false;
+      justCalculated = false;
+    } else {
+      current = current.slice(0, -1);
+      if (current === "" || current === "-") current = "0";
+    }
+    update();
+  }
+
+  function toggleSign() {
+    if (error) return;
+    if (Number(current) !== 0) current = String(-Number(current));
+    update();
+  }
+
+  function percent() {
+    if (error) return;
+    current = pretty(Number(current) / 100);
+    waiting = false;
+    justCalculated = false;
+    update();
+  }
+
+  function renderHistory() {
+    historyList.replaceChildren();
+
+    if (calculations.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "Your calculations will appear here.";
+      historyList.appendChild(empty);
+      return;
+    }
+
+    calculations.forEach(item => {
+      const button = document.createElement("button");
+      button.className = "history-item";
+
+      const small = document.createElement("small");
+      small.textContent = item.expression + " =";
+      const answer = document.createElement("strong");
+      answer.textContent = item.answer;
+
+      button.append(small, answer);
+      button.addEventListener("click", () => {
+        current = item.answer;
+        stored = null;
+        operator = null;
+        waiting = false;
+        justCalculated = true;
+        error = false;
+        update();
+      });
+      historyList.appendChild(button);
+    });
+  }
+
+  document.querySelectorAll("[data-digit]").forEach(button => {
+    button.addEventListener("click", () => inputDigit(button.dataset.digit));
+  });
+
+  document.querySelectorAll("[data-op]").forEach(button => {
+    button.addEventListener("click", () => chooseOperator(button.dataset.op));
+  });
+
+  document.querySelectorAll("[data-action]").forEach(button => {
+    button.addEventListener("click", () => {
+      const action = button.dataset.action;
+      if (action === "clear") clearAll();
+      if (action === "delete") deleteLast();
+      if (action === "percent") percent();
+      if (action === "sign") toggleSign();
+      if (action === "decimal") decimal();
+      if (action === "zero") inputDigit("0");
+      if (action === "equals") equals();
+    });
+  });
+
+  document.addEventListener("keydown", event => {
+    if (/^[0-9]$/.test(event.key)) {
+      inputDigit(event.key);
+    } else if (event.key === ".") {
+      decimal();
+    } else if (["+", "-", "*", "/"].includes(event.key)) {
+      chooseOperator(event.key);
+    } else if (event.key === "Enter" || event.key === "=") {
+      event.preventDefault();
+      equals();
+    } else if (event.key === "Backspace") {
+      deleteLast();
+    } else if (event.key === "Escape" || event.key === "Delete") {
+      clearAll();
+    } else if (event.key === "%") {
+      percent();
+    }
+  });
+
+  function setTheme(light) {
+    document.body.classList.toggle("light", light);
+    document.getElementById("themeBtn").textContent = light ? "☾" : "☀";
+    document.getElementById("themeBtn").title =
+      light ? "Switch to dark mode" : "Switch to light mode";
+    document.getElementById("themeBtn").setAttribute(
+      "aria-label", light ? "Switch to dark mode" : "Switch to light mode"
+    );
+  }
+
+  let lightMode = false;
+  document.getElementById("themeBtn").addEventListener("click", () => {
+    lightMode = !lightMode;
+    setTheme(lightMode);
+  });
+
+  document.getElementById("historyToggle").addEventListener("click", () => {
+    historyPanel.classList.toggle("open");
+  });
+
+  document.getElementById("clearHistory").addEventListener("click", () => {
+    calculations.length = 0;
+    renderHistory();
+  });
+
+  update();
+  renderHistory();
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js")
+        .catch((error) => {
+          console.error("Service worker registration failed:", error);
+        });
+    });
+  }
+</script>
+
+</body>
+</html>
